@@ -258,6 +258,7 @@ public class TrackerSyncService {
 
     private List<ProcessItem> sortedProcesses(List<ProcessItem> source) {
         List<ProcessItem> result = new ArrayList<>(source == null ? List.of() : source);
+        result.removeIf(item -> item.getWindowName() == null || item.getWindowName().isBlank());
         result.sort(Comparator.comparing(ProcessItem::getStartTime)
                 .thenComparing(item -> item.getEndTime() == null));
         return result;

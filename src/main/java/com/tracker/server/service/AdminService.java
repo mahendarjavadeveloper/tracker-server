@@ -84,7 +84,10 @@ public class AdminService {
         LocalDateTime start = LocalDate.now().atStartOfDay();
         LocalDateTime end = start.plusDays(1);
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("runningProcesses", processRepository.findByDevice_IdAndStatus(deviceId, "RUNNING"));
+        result.put("runningProcesses", processRepository.findByDevice_IdAndStatus(deviceId, "RUNNING")
+                .stream()
+                .filter(item -> hasText(item.getWindowName()))
+                .toList());
         result.put("activeWindows", windowRepository.findByDevice_IdOrderByStartTimeDesc(deviceId)
                 .stream()
                 .filter(item -> inRange(item.getStartTime(), start, end))
@@ -115,6 +118,7 @@ public class AdminService {
     private RecordResponse processRecords(Long deviceId, AdminRecordFilter filter, DateRange range) {
         Stream<ProcessActivity> stream = processRepository.findByDevice_IdOrderByStartTimeDesc(deviceId)
                 .stream()
+                .filter(item -> hasText(item.getWindowName()))
                 .filter(item -> inRange(item.getStartTime(), range.start(), range.end()))
                 .filter(item -> !hasText(filter.getProcessName())
                         || contains(item.getProcessName(), filter.getProcessName()))

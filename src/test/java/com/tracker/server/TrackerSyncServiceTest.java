@@ -145,6 +145,23 @@ class TrackerSyncServiceTest {
         assertThat(activity.getEndTime()).isNull();
     }
 
+    @Test
+    void processWithoutAVisibleWindowIsIgnored() {
+        BatchRequest request = new BatchRequest();
+        ProcessItem background = process(
+                "background-process",
+                micros(LocalDateTime.now().minusMinutes(1)),
+                null
+        );
+        background.setWindowName(" ");
+        request.getProcesses().add(background);
+
+        var response = syncService.sync(user.getId(), device.getId(), request);
+
+        assertThat(processRepository.findAll()).isEmpty();
+        assertThat(response.getProcesses()).isEmpty();
+    }
+
     private ProcessItem process(String localId, LocalDateTime start, LocalDateTime end) {
         ProcessItem item = new ProcessItem();
         item.setLocalId(localId);
