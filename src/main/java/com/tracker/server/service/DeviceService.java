@@ -8,6 +8,7 @@ import com.tracker.server.entity.Device;
 import com.tracker.server.entity.User;
 import com.tracker.server.repository.DeviceRepository;
 import com.tracker.server.repository.UserRepository;
+import com.tracker.server.util.DateTimeUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +45,7 @@ public class DeviceService {
         device.setUninstalledAt(null);
         device.setShutdownAt(null);
         device.setStatus("ONLINE");
-        device.setLastSeen(LocalDateTime.now());
+        device.setLastSeen(DateTimeUtil.now());
         return deviceRepository.save(device);
     }
 
@@ -56,7 +57,7 @@ public class DeviceService {
         }
         device.setOnline(true);
         device.setStatus("ONLINE");
-        device.setLastSeen(LocalDateTime.now());
+        device.setLastSeen(DateTimeUtil.now());
         if (request != null && request.ipAddress() != null && !request.ipAddress().isBlank()) {
             device.setLastIpAddress(request.ipAddress().trim());
         }
@@ -67,7 +68,7 @@ public class DeviceService {
     public Device shutdown(Long userId, Long deviceId, ShutdownRequest request) {
         Device device = ownedForUpdate(userId, deviceId);
         LocalDateTime shutdownAt = request == null || request.shutdownAt() == null
-                ? LocalDateTime.now()
+                ? DateTimeUtil.now()
                 : request.shutdownAt();
         device.setOnline(false);
         device.setStatus("SHUTDOWN");
@@ -80,7 +81,7 @@ public class DeviceService {
     public Device uninstall(Long userId, Long deviceId, UninstallRequest request) {
         Device device = ownedForUpdate(userId, deviceId);
         LocalDateTime uninstalledAt = request == null || request.uninstalledAt() == null
-                ? LocalDateTime.now()
+                ? DateTimeUtil.now()
                 : request.uninstalledAt();
         device.setUninstalled(true);
         device.setUninstalledAt(uninstalledAt);

@@ -5,6 +5,7 @@ import com.tracker.server.dto.SyncDtos.IdleItem;
 import com.tracker.server.dto.SyncDtos.ProcessItem;
 import com.tracker.server.dto.SyncDtos.SessionItem;
 import com.tracker.server.dto.SyncDtos.WindowItem;
+import com.tracker.server.dto.DeviceDtos.HeartbeatRequest;
 import com.tracker.server.entity.Device;
 import com.tracker.server.entity.User;
 import com.tracker.server.repository.ActiveWindowActivityRepository;
@@ -14,6 +15,7 @@ import com.tracker.server.repository.IdleActivityRepository;
 import com.tracker.server.repository.ProcessActivityRepository;
 import com.tracker.server.repository.UserRepository;
 import com.tracker.server.scheduler.DeviceStatusScheduler;
+import com.tracker.server.service.DeviceService;
 import com.tracker.server.service.TrackerSyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TrackerSyncServiceTest {
     @Autowired
     private TrackerSyncService syncService;
+
+    @Autowired
+    private DeviceService deviceService;
 
     @Autowired
     private DeviceStatusScheduler statusScheduler;
@@ -143,6 +149,21 @@ class TrackerSyncServiceTest {
         assertThat(offline.getStatus()).isEqualTo("OFFLINE");
         assertThat(activity.getStatus()).isEqualTo("RUNNING");
         assertThat(activity.getEndTime()).isNull();
+    }
+
+    @Test
+    void heartbeatUsesIndiaTimeOnUtcServers() {
+        ZoneId india = ZoneId.of("Asia/Kolkata");
+        LocalDateTime before = LocalDateTime.now(india).minusSeconds(1);
+
+        Device saved = deviceService.heartbeat(
+                user.getId(),
+                device.getId(),
+                new HeartbeatRequest(null, null)
+        );
+
+        LocalDateTime after = LocalDateTime.now(india).plusSeconds(1);
+        assertThat(saved.getLastSeen()).isBetween(before, after);
     }
 
     @Test

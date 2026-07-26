@@ -16,6 +16,7 @@ import com.tracker.server.repository.DeviceRepository;
 import com.tracker.server.repository.DeviceSessionRepository;
 import com.tracker.server.repository.IdleActivityRepository;
 import com.tracker.server.repository.ProcessActivityRepository;
+import com.tracker.server.util.DateTimeUtil;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,7 +74,7 @@ public class TrackerSyncService {
         device.setOnline(true);
         device.setStatus("ONLINE");
         device.setShutdownAt(null);
-        device.setLastSeen(LocalDateTime.now());
+        device.setLastSeen(DateTimeUtil.now());
         return response;
     }
 

@@ -2,6 +2,7 @@ package com.tracker.server.scheduler;
 
 import com.tracker.server.entity.Device;
 import com.tracker.server.repository.DeviceRepository;
+import com.tracker.server.util.DateTimeUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,7 @@ public class DeviceStatusScheduler {
     @Scheduled(fixedDelayString = "${app.device.offline-check-ms:10000}")
     @Transactional
     public void markMissingHeartbeatsOffline() {
-        LocalDateTime threshold = LocalDateTime.now().minusSeconds(offlineAfterSeconds);
+        LocalDateTime threshold = DateTimeUtil.now().minusSeconds(offlineAfterSeconds);
         for (Device device : deviceRepository
                 .findByOnlineTrueAndUninstalledFalseAndLastSeenBefore(threshold)) {
             device.setOnline(false);
