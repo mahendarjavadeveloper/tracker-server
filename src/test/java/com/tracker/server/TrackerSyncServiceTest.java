@@ -6,6 +6,8 @@ import com.tracker.server.dto.SyncDtos.ProcessItem;
 import com.tracker.server.dto.SyncDtos.SessionItem;
 import com.tracker.server.dto.SyncDtos.WindowItem;
 import com.tracker.server.dto.DeviceDtos.HeartbeatRequest;
+import com.tracker.server.dto.DeviceDtos.RegisterRequest;
+import com.tracker.server.dto.DeviceDtos.UninstallRequest;
 import com.tracker.server.entity.Device;
 import com.tracker.server.entity.User;
 import com.tracker.server.repository.ActiveWindowActivityRepository;
@@ -164,6 +166,32 @@ class TrackerSyncServiceTest {
 
         LocalDateTime after = LocalDateTime.now(india).plusSeconds(1);
         assertThat(saved.getLastSeen()).isBetween(before, after);
+    }
+
+    @Test
+    void reinstallKeepsPreviousUninstallTimestamp() {
+        LocalDateTime uninstalledAt = LocalDateTime.of(2026, 7, 26, 20, 44, 28);
+        deviceService.uninstall(
+                user.getId(),
+                device.getId(),
+                new UninstallRequest(uninstalledAt)
+        );
+
+        Device reinstalled = deviceService.register(
+                user.getId(),
+                new RegisterRequest(
+                        "install-1",
+                        null,
+                        "workstation",
+                        "Windows 11",
+                        null
+                )
+        );
+
+        assertThat(reinstalled.isUninstalled()).isFalse();
+        assertThat(reinstalled.isOnline()).isTrue();
+        assertThat(reinstalled.getStatus()).isEqualTo("ONLINE");
+        assertThat(reinstalled.getUninstalledAt()).isEqualTo(uninstalledAt);
     }
 
     @Test
