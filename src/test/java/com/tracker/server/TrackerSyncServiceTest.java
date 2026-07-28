@@ -26,6 +26,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -166,6 +167,26 @@ class TrackerSyncServiceTest {
 
         LocalDateTime after = LocalDateTime.now(india).plusSeconds(1);
         assertThat(saved.getLastSeen()).isBetween(before, after);
+    }
+
+    @Test
+    void userCreationUsesIndiaTimeOnUtcServers() {
+        TimeZone original = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+            ZoneId india = ZoneId.of("Asia/Kolkata");
+            LocalDateTime before = LocalDateTime.now(india).minusSeconds(1);
+            User created = new User();
+            created.setUsername("timezone-user");
+            created.setRole("USER");
+
+            User saved = userRepository.saveAndFlush(created);
+
+            LocalDateTime after = LocalDateTime.now(india).plusSeconds(1);
+            assertThat(saved.getCreatedAt()).isBetween(before, after);
+        } finally {
+            TimeZone.setDefault(original);
+        }
     }
 
     @Test
