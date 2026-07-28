@@ -204,9 +204,7 @@ public class TrackerSyncService {
         }
         session.setDevice(device);
         session.setUser(device.getUser());
-        if (session.getStartupTime() == null) {
-            session.setStartupTime(item.getStartupTime());
-        }
+        session.setStartupTime(item.getStartupTime());
         if (item.getShutdownTime() == null) {
             session.setShutdownTime(null);
             session.setStatus("RUNNING");

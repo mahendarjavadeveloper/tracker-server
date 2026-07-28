@@ -169,6 +169,24 @@ class TrackerSyncServiceTest {
     }
 
     @Test
+    void localSessionRepairsAnIncorrectServerStartupTime() {
+        LocalDateTime incorrect = micros(LocalDateTime.now().minusDays(2));
+        LocalDateTime actual = micros(LocalDateTime.now());
+        BatchRequest first = new BatchRequest();
+        first.getSessions().add(session("session-repair", incorrect));
+        syncService.sync(user.getId(), device.getId(), first);
+
+        BatchRequest corrected = new BatchRequest();
+        corrected.getSessions().add(session("session-repair", actual));
+        syncService.sync(user.getId(), device.getId(), corrected);
+
+        assertThat(sessionRepository.findAll()).hasSize(1);
+        assertThat(sessionRepository.findAll().getFirst())
+                .extracting("localId", "startupTime", "status")
+                .containsExactly("session-repair", actual, "RUNNING");
+    }
+
+    @Test
     void heartbeatUsesIndiaTimeOnUtcServers() {
         ZoneId india = ZoneId.of("Asia/Kolkata");
         LocalDateTime before = LocalDateTime.now(india).minusSeconds(1);
