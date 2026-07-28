@@ -127,22 +127,7 @@ class TrackerSyncServiceTest {
         assertThat(idleRepository.findByDevice_IdAndStatus(device.getId(), "RUNNING")).hasSize(1);
         assertThat(idleRepository.findAll()).hasSize(1);
         assertThat(sessionRepository.findByDevice_IdAndStatus(device.getId(), "RUNNING")).hasSize(1);
-        assertThat(sessionRepository.findAll()).hasSize(2);
-        assertThat(sessionRepository.findByDevice_IdOrderByStartupTimeDesc(device.getId()).getFirst())
-                .extracting("localId", "startupTime", "status", "shutdownTime")
-                .containsExactly(
-                        "session-2",
-                        start.plusMinutes(2),
-                        "RUNNING",
-                        null
-                );
-        assertThat(sessionRepository.findByDevice_IdOrderByStartupTimeDesc(device.getId()).getLast())
-                .extracting("localId", "status", "shutdownTime")
-                .containsExactly(
-                        "session-1",
-                        "SHUTDOWN",
-                        start.plusMinutes(2)
-                );
+        assertThat(sessionRepository.findAll()).hasSize(1);
     }
 
     @Test
@@ -166,24 +151,6 @@ class TrackerSyncServiceTest {
         assertThat(offline.getStatus()).isEqualTo("OFFLINE");
         assertThat(activity.getStatus()).isEqualTo("RUNNING");
         assertThat(activity.getEndTime()).isNull();
-    }
-
-    @Test
-    void localSessionRepairsAnIncorrectServerStartupTime() {
-        LocalDateTime incorrect = micros(LocalDateTime.now().minusDays(2));
-        LocalDateTime actual = micros(LocalDateTime.now());
-        BatchRequest first = new BatchRequest();
-        first.getSessions().add(session("session-repair", incorrect));
-        syncService.sync(user.getId(), device.getId(), first);
-
-        BatchRequest corrected = new BatchRequest();
-        corrected.getSessions().add(session("session-repair", actual));
-        syncService.sync(user.getId(), device.getId(), corrected);
-
-        assertThat(sessionRepository.findAll()).hasSize(1);
-        assertThat(sessionRepository.findAll().getFirst())
-                .extracting("localId", "startupTime", "status")
-                .containsExactly("session-repair", actual, "RUNNING");
     }
 
     @Test

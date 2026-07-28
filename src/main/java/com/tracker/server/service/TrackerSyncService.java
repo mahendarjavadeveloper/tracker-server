@@ -192,6 +192,12 @@ public class TrackerSyncService {
                         .findFirstByDevice_IdAndStartupTimeAndShutdownTimeIsNull(device.getId(), item.getStartupTime()))
                 .orElse(null);
 
+        if (session == null && item.getShutdownTime() == null) {
+            session = sessionRepository.findByDevice_IdAndStatus(device.getId(), "RUNNING")
+                    .stream()
+                    .findFirst()
+                    .orElse(null);
+        }
         if (session == null) {
             session = new DeviceSession();
         }
@@ -204,7 +210,9 @@ public class TrackerSyncService {
         }
         session.setDevice(device);
         session.setUser(device.getUser());
-        session.setStartupTime(item.getStartupTime());
+        if (session.getStartupTime() == null) {
+            session.setStartupTime(item.getStartupTime());
+        }
         if (item.getShutdownTime() == null) {
             session.setShutdownTime(null);
             session.setStatus("RUNNING");
