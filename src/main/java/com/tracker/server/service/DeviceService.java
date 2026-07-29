@@ -42,7 +42,6 @@ public class DeviceService {
         device.setUser(user);
         device.setOnline(true);
         device.setUninstalled(false);
-        device.setUninstalledAt(null);
         device.setShutdownAt(null);
         device.setStatus("ONLINE");
         device.setLastSeen(DateTimeUtil.now());
