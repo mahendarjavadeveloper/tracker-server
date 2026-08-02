@@ -169,6 +169,43 @@ class TrackerSyncServiceTest {
     }
 
     @Test
+    void serverResolvedIpAndExistingMacArePreservedDuringRegistration() {
+        device.setMacAddress("AA-BB-CC-DD-EE-FF");
+        device.setLastIpAddress("198.51.100.1");
+        deviceRepository.saveAndFlush(device);
+
+        Device saved = deviceService.register(
+                user.getId(),
+                new RegisterRequest(
+                        "install-1",
+                        null,
+                        "workstation",
+                        "Windows 11",
+                        "192.168.1.15"
+                ),
+                "203.0.113.24"
+        );
+
+        assertThat(saved.getMacAddress()).isEqualTo("AA-BB-CC-DD-EE-FF");
+        assertThat(saved.getLastIpAddress()).isEqualTo("203.0.113.24");
+    }
+
+    @Test
+    void blankHeartbeatIpDoesNotEraseExistingAddress() {
+        device.setLastIpAddress("203.0.113.24");
+        deviceRepository.saveAndFlush(device);
+
+        Device saved = deviceService.heartbeat(
+                user.getId(),
+                device.getId(),
+                new HeartbeatRequest(null, "192.168.1.15"),
+                null
+        );
+
+        assertThat(saved.getLastIpAddress()).isEqualTo("203.0.113.24");
+    }
+
+    @Test
     void reinstallKeepsPreviousUninstallTimestamp() {
         LocalDateTime uninstalledAt = LocalDateTime.of(2026, 7, 26, 20, 44, 28);
         deviceService.uninstall(

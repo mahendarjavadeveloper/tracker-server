@@ -7,6 +7,8 @@ import com.tracker.server.dto.DeviceDtos.UninstallRequest;
 import com.tracker.server.entity.Device;
 import com.tracker.server.security.TrackerPrincipal;
 import com.tracker.server.service.DeviceService;
+import com.tracker.server.util.ClientIpResolver;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,9 +32,14 @@ public class DeviceController {
     @PostMapping("/register")
     public Device register(
             @AuthenticationPrincipal TrackerPrincipal principal,
-            @Valid @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest servletRequest
     ) {
-        return deviceService.register(principal.userId(), request);
+        return deviceService.register(
+                principal.userId(),
+                request,
+                ClientIpResolver.resolve(servletRequest)
+        );
     }
 
     @GetMapping
@@ -44,9 +51,15 @@ public class DeviceController {
     public Device heartbeat(
             @AuthenticationPrincipal TrackerPrincipal principal,
             @PathVariable Long deviceId,
-            @RequestBody(required = false) HeartbeatRequest request
+            @RequestBody(required = false) HeartbeatRequest request,
+            HttpServletRequest servletRequest
     ) {
-        return deviceService.heartbeat(principal.userId(), deviceId, request);
+        return deviceService.heartbeat(
+                principal.userId(),
+                deviceId,
+                request,
+                ClientIpResolver.resolve(servletRequest)
+        );
     }
 
     @PostMapping("/{deviceId}/shutdown")
