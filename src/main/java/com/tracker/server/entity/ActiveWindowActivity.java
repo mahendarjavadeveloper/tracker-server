@@ -30,7 +30,7 @@ public class ActiveWindowActivity {
     @Column(name = "offline_id", unique = true, length = 64)
     private String localId;
 
-    @Column(name = "window_title", nullable = false, length = 1024)
+    @Column(name = "window_title", nullable = false, columnDefinition = "TEXT")
     private String windowTitle;
 
     @Column(name = "start_time", nullable = false)

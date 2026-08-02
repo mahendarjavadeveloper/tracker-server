@@ -211,6 +211,27 @@ class TrackerSyncServiceTest {
         assertThat(response.getProcesses()).isEmpty();
     }
 
+    @Test
+    void longWindowTitleDoesNotRollBackTheSyncBatch() {
+        LocalDateTime start = micros(LocalDateTime.now().minusMinutes(1));
+        String title = "Long browser page title ".repeat(100);
+        BatchRequest request = new BatchRequest();
+        request.getProcesses().add(process("long-title-process", start, null));
+        request.getWindows().add(window("long-title-window", title, start));
+        request.getIdle().add(idle("long-title-idle", start));
+        request.getSessions().add(session("long-title-session", start));
+
+        var response = syncService.sync(user.getId(), device.getId(), request);
+
+        assertThat(windowRepository.findAll()).singleElement()
+                .extracting("windowTitle")
+                .isEqualTo(title);
+        assertThat(processRepository.count()).isEqualTo(1);
+        assertThat(idleRepository.count()).isEqualTo(1);
+        assertThat(sessionRepository.count()).isEqualTo(1);
+        assertThat(response.getWindows()).containsKey("long-title-window");
+    }
+
     private ProcessItem process(String localId, LocalDateTime start, LocalDateTime end) {
         ProcessItem item = new ProcessItem();
         item.setLocalId(localId);
