@@ -2,6 +2,7 @@ package com.tracker.server.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.tracker.server.util.DateTimeUtil;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -76,7 +77,7 @@ public class Device {
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = DateTimeUtil.now();
         }
         if (status == null || status.isBlank()) {
             status = "OFFLINE";

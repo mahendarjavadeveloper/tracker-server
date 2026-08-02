@@ -1,6 +1,7 @@
 package com.tracker.server.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.tracker.server.util.DateTimeUtil;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -40,7 +41,7 @@ public class User {
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = DateTimeUtil.now();
         }
         if (role == null || role.isBlank()) {
             role = "USER";
