@@ -16,7 +16,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class DeviceService {
@@ -30,11 +29,6 @@ public class DeviceService {
 
     @Transactional
     public Device register(Long userId, RegisterRequest request) {
-        return register(userId, request, request.ipAddress());
-    }
-
-    @Transactional
-    public Device register(Long userId, RegisterRequest request, String clientIp) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         Device device = deviceRepository
@@ -42,12 +36,9 @@ public class DeviceService {
                 .orElseGet(Device::new);
         device.setInstallationId(request.installationId().trim());
         device.setMachineName(request.machineName().trim());
-        String macAddress = clean(request.macAddress());
-        if (macAddress != null && !Objects.equals(device.getMacAddress(), macAddress)) {
-            device.setMacAddress(macAddress);
-        }
+        device.setMacAddress(clean(request.macAddress()));
         device.setOsName(clean(request.osName()));
-        updateLastIpAddress(device, clientIp);
+        device.setLastIpAddress(clean(request.ipAddress()));
         device.setUser(user);
         device.setOnline(true);
         device.setUninstalled(false);
@@ -59,21 +50,6 @@ public class DeviceService {
 
     @Transactional
     public Device heartbeat(Long userId, Long deviceId, HeartbeatRequest request) {
-        return heartbeat(
-                userId,
-                deviceId,
-                request,
-                request == null ? null : request.ipAddress()
-        );
-    }
-
-    @Transactional
-    public Device heartbeat(
-            Long userId,
-            Long deviceId,
-            HeartbeatRequest request,
-            String clientIp
-    ) {
         Device device = ownedForUpdate(userId, deviceId);
         if (device.isUninstalled()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Device is uninstalled");
@@ -81,7 +57,9 @@ public class DeviceService {
         device.setOnline(true);
         device.setStatus("ONLINE");
         device.setLastSeen(DateTimeUtil.now());
-        updateLastIpAddress(device, clientIp);
+        if (request != null && request.ipAddress() != null && !request.ipAddress().isBlank()) {
+            device.setLastIpAddress(request.ipAddress().trim());
+        }
         return device;
     }
 
@@ -128,12 +106,5 @@ public class DeviceService {
 
     private String clean(String value) {
         return value == null || value.isBlank() ? null : value.trim();
-    }
-
-    private void updateLastIpAddress(Device device, String value) {
-        String ipAddress = clean(value);
-        if (ipAddress != null && !Objects.equals(device.getLastIpAddress(), ipAddress)) {
-            device.setLastIpAddress(ipAddress);
-        }
     }
 }
