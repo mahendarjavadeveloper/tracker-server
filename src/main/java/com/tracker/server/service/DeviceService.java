@@ -15,20 +15,35 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class DeviceService {
+    private static final Duration LOCATION_RETRY_DELAY = Duration.ofHours(6);
+
     private final DeviceRepository deviceRepository;
     private final UserRepository userRepository;
+    private final IpGeolocationService ipGeolocationService;
 
-    public DeviceService(DeviceRepository deviceRepository, UserRepository userRepository) {
+    public DeviceService(
+            DeviceRepository deviceRepository,
+            UserRepository userRepository,
+            IpGeolocationService ipGeolocationService
+    ) {
         this.deviceRepository = deviceRepository;
         this.userRepository = userRepository;
+        this.ipGeolocationService = ipGeolocationService;
     }
 
     @Transactional
     public Device register(Long userId, RegisterRequest request) {
+        return register(userId, request, null);
+    }
+
+    @Transactional
+    public Device register(Long userId, RegisterRequest request, String publicIpAddress) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         Device device = deviceRepository
@@ -45,11 +60,22 @@ public class DeviceService {
         device.setShutdownAt(null);
         device.setStatus("ONLINE");
         device.setLastSeen(DateTimeUtil.now());
+        updatePublicIpLocation(device, publicIpAddress);
         return deviceRepository.save(device);
     }
 
     @Transactional
     public Device heartbeat(Long userId, Long deviceId, HeartbeatRequest request) {
+        return heartbeat(userId, deviceId, request, null);
+    }
+
+    @Transactional
+    public Device heartbeat(
+            Long userId,
+            Long deviceId,
+            HeartbeatRequest request,
+            String publicIpAddress
+    ) {
         Device device = ownedForUpdate(userId, deviceId);
         if (device.isUninstalled()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Device is uninstalled");
@@ -60,6 +86,7 @@ public class DeviceService {
         if (request != null && request.ipAddress() != null && !request.ipAddress().isBlank()) {
             device.setLastIpAddress(request.ipAddress().trim());
         }
+        updatePublicIpLocation(device, publicIpAddress);
         return device;
     }
 
@@ -106,5 +133,34 @@ public class DeviceService {
 
     private String clean(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private void updatePublicIpLocation(Device device, String publicIpAddress) {
+        String publicIp = clean(publicIpAddress);
+        if (publicIp == null) {
+            return;
+        }
+
+        boolean ipChanged = !Objects.equals(device.getPublicIpAddress(), publicIp);
+        if (ipChanged) {
+            device.setPublicIpAddress(publicIp);
+            device.setCountry(null);
+            device.setState(null);
+            device.setIpLocationCheckedAt(null);
+        }
+
+        LocalDateTime checkedAt = device.getIpLocationCheckedAt();
+        boolean locationMissing = device.getCountry() == null && device.getState() == null;
+        boolean retryDue = checkedAt == null
+                || checkedAt.plus(LOCATION_RETRY_DELAY).isBefore(DateTimeUtil.now());
+        if (!ipChanged && (!locationMissing || !retryDue)) {
+            return;
+        }
+
+        device.setIpLocationCheckedAt(DateTimeUtil.now());
+        ipGeolocationService.find(publicIp).ifPresent(location -> {
+            device.setCountry(location.country());
+            device.setState(location.state());
+        });
     }
 }

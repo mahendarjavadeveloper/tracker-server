@@ -6,7 +6,9 @@ import com.tracker.server.dto.DeviceDtos.ShutdownRequest;
 import com.tracker.server.dto.DeviceDtos.UninstallRequest;
 import com.tracker.server.entity.Device;
 import com.tracker.server.security.TrackerPrincipal;
+import com.tracker.server.service.ClientIpResolver;
 import com.tracker.server.service.DeviceService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,17 +24,24 @@ import java.util.List;
 @RequestMapping("/api/devices")
 public class DeviceController {
     private final DeviceService deviceService;
+    private final ClientIpResolver clientIpResolver;
 
-    public DeviceController(DeviceService deviceService) {
+    public DeviceController(DeviceService deviceService, ClientIpResolver clientIpResolver) {
         this.deviceService = deviceService;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @PostMapping("/register")
     public Device register(
             @AuthenticationPrincipal TrackerPrincipal principal,
-            @Valid @RequestBody RegisterRequest request
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return deviceService.register(principal.userId(), request);
+        return deviceService.register(
+                principal.userId(),
+                request,
+                clientIpResolver.resolve(httpRequest)
+        );
     }
 
     @GetMapping
@@ -44,9 +53,15 @@ public class DeviceController {
     public Device heartbeat(
             @AuthenticationPrincipal TrackerPrincipal principal,
             @PathVariable Long deviceId,
-            @RequestBody(required = false) HeartbeatRequest request
+            @RequestBody(required = false) HeartbeatRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return deviceService.heartbeat(principal.userId(), deviceId, request);
+        return deviceService.heartbeat(
+                principal.userId(),
+                deviceId,
+                request,
+                clientIpResolver.resolve(httpRequest)
+        );
     }
 
     @PostMapping("/{deviceId}/shutdown")

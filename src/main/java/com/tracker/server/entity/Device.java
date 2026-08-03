@@ -43,6 +43,19 @@ public class Device {
     @Column(name = "last_ip_address", length = 64)
     private String lastIpAddress;
 
+    @Column(name = "public_ip_address", length = 64)
+    private String publicIpAddress;
+
+    @Column(name = "country_name", length = 100)
+    private String country;
+
+    @Column(name = "state_name", length = 150)
+    private String state;
+
+    @JsonIgnore
+    @Column(name = "ip_location_checked_at")
+    private LocalDateTime ipLocationCheckedAt;
+
     @Column(name = "last_seen")
     private LocalDateTime lastSeen;
 
