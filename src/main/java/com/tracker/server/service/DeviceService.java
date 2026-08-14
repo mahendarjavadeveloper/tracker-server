@@ -21,7 +21,7 @@ import java.util.Objects;
 
 @Service
 public class DeviceService {
-    private static final Duration LOCATION_RETRY_DELAY = Duration.ofHours(6);
+    private static final Duration LOCATION_RETRY_DELAY = Duration.ofMinutes(5);
 
     private final DeviceRepository deviceRepository;
     private final UserRepository userRepository;

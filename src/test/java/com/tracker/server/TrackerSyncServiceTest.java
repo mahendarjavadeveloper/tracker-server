@@ -127,7 +127,12 @@ class TrackerSyncServiceTest {
         assertThat(idleRepository.findByDevice_IdAndStatus(device.getId(), "RUNNING")).hasSize(1);
         assertThat(idleRepository.findAll()).hasSize(1);
         assertThat(sessionRepository.findByDevice_IdAndStatus(device.getId(), "RUNNING")).hasSize(1);
-        assertThat(sessionRepository.findAll()).hasSize(1);
+        assertThat(sessionRepository.findAll()).hasSize(2);
+        assertThat(sessionRepository.findAll())
+                .filteredOn(item -> "SHUTDOWN".equals(item.getStatus()))
+                .singleElement()
+                .extracting("shutdownTime")
+                .isEqualTo(start.plusMinutes(2));
     }
 
     @Test

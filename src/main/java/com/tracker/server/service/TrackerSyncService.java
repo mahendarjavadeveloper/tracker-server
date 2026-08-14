@@ -192,12 +192,6 @@ public class TrackerSyncService {
                         .findFirstByDevice_IdAndStartupTimeAndShutdownTimeIsNull(device.getId(), item.getStartupTime()))
                 .orElse(null);
 
-        if (session == null && item.getShutdownTime() == null) {
-            session = sessionRepository.findByDevice_IdAndStatus(device.getId(), "RUNNING")
-                    .stream()
-                    .findFirst()
-                    .orElse(null);
-        }
         if (session == null) {
             session = new DeviceSession();
         }
